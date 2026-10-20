@@ -4,7 +4,7 @@ RAGShield is a learning project for building and testing a locally run, access-c
 
 ## Current status
 
-Phase 1 provides a small FastAPI backend with a `GET /health` endpoint and a test for its JSON response. It does not yet load documents, enforce roles, connect to Ollama, store embeddings, or provide a frontend. A successful health check only confirms that the API responds; it does not prove application security.
+Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR markdown files. The server filters document categories using the authenticated role before reading them. It does not yet connect to Ollama, store embeddings, or provide a frontend. A successful health check only confirms that the API responds; it does not prove application security.
 
 ## Planned architecture
 
@@ -13,6 +13,7 @@ Phase 1 provides a small FastAPI backend with a `GET /health` endpoint and a tes
 - ChromaDB will store local document embeddings.
 - React, Vite, JavaScript, and CSS will provide the planned frontend.
 - pytest will verify backend behavior and later security controls.
+- Local bearer tokens select the demo employee or HR role for protected routes.
 
 No paid API, hosted inference service, or cloud database is required.
 
@@ -68,13 +69,24 @@ You can also avoid activation by calling `.venv\Scripts\python.exe` directly.
 
 ## Run the backend
 
-With the virtual environment active, start the local development server:
+With the virtual environment active, configure two different local demo tokens and start the server in the same PowerShell window:
 
 ```powershell
+$env:RAGSHIELD_EMPLOYEE_TOKEN = [guid]::NewGuid().ToString('N')
+$env:RAGSHIELD_HR_TOKEN = [guid]::NewGuid().ToString('N')
 python -m uvicorn app.main:app --reload
 ```
 
 Open <http://127.0.0.1:8000/health> to see `{"status":"ok"}`. Stop the server with **Ctrl+C** in its terminal.
+
+Search local documents by passing one of those tokens in an Authorization header. The employee token can search only `data/source/employee`; the HR token can search both employee and HR files. The `data/source/security-tests` folder is never searched.
+
+```powershell
+$headers = @{ Authorization = "Bearer $env:RAGSHIELD_EMPLOYEE_TOKEN" }
+Invoke-RestMethod -Uri 'http://127.0.0.1:8000/documents/search?q=leave' -Headers $headers
+```
+
+The tokens are local development credentials, not a production identity system. Keep any real values out of Git, and do not use the sample token values from tests outside testing.
 
 ## Run the tests
 
@@ -82,7 +94,7 @@ Open <http://127.0.0.1:8000/health> to see `{"status":"ok"}`. Stop the server wi
 python -m pytest
 ```
 
-The health test checks the HTTP status, JSON content type, and expected status value.
+The tests check the health response, token validation, employee-to-HR isolation, and HR visibility across both allowed document categories.
 
 ## Troubleshooting
 
@@ -106,5 +118,5 @@ git push origin main
 
 ## How this connects to the future RAG pipeline
 
-This API is the starting point for later routes. Future phases can add document ingestion and embeddings, retrieve only passages authorized for the signed-in user's role, and send the allowed context to a local Ollama model. The current health endpoint exposes no secrets or machine-specific details, and none of those future capabilities are represented as implemented yet.
+This API now filters local source documents by a role selected from distinct bearer tokens. Later phases can add chunking and local embeddings, send only authorized passages to Ollama, and build a frontend and audit log. The current keyword search is a small learning baseline, and these tests do not prove security against every attack.
 
