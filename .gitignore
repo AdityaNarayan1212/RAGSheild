@@ -1,0 +1,35 @@
+# Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Local runtime data, databases, and logs
+/data/chroma/
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+
+# Generated security test data may contain attack payloads or sensitive fixtures
+/data/source/security-tests/generated/
+
+# Frontend dependencies and build output
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Codex task scratch and deliverable directories
+/work/
+/outputs/
