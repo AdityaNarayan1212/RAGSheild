@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from typing import TypedDict
 
-from app.auth import Role
+from app.config import Role
 
 DOCUMENT_ROOT = Path(__file__).resolve().parents[1] / "data" / "source"
 

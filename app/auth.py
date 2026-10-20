@@ -44,3 +44,14 @@ def require_role(
         detail="A valid bearer token is required.",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def require_hr(role: Role = Depends(require_role)) -> Role:
+    """Restrict document indexing to the local HR demo role."""
+    if role != "hr":
+        record_event("auth_denied", role, "denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="The HR role is required for document indexing.",
+        )
+    return role

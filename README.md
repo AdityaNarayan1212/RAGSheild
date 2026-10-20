@@ -4,7 +4,9 @@ RAGShield is a learning project for building and testing a locally run, access-c
 
 ## Current status
 
-Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. The server filters document categories using the authenticated role before reading them. It does not yet connect to Ollama, store embeddings, or provide a frontend. A successful health check only confirms that the API responds; it does not prove application security.
+Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. Phase 4 adds local Ollama embeddings and a persistent Chroma vector index with role-filtered semantic retrieval. There is no answer-generating LLM route or frontend yet. A successful health check only confirms that the API responds; it does not prove application security.
+
+See [ROADMAP.md](ROADMAP.md) for delivered features and planned phases.
 
 ## Planned architecture
 
@@ -15,6 +17,7 @@ Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles a
 - pytest will verify backend behavior and later security controls.
 - Local bearer tokens select the demo employee or HR role for protected routes.
 - The audit log records event type, role, outcome, and result count without credentials or document content.
+- Ollama creates embeddings locally; Chroma persists vectors under `data/chroma`.
 
 No paid API, hosted inference service, or cloud database is required.
 
@@ -27,7 +30,7 @@ Install these tools from their official sources:
 - Node.js (includes npm): <https://nodejs.org/en/download>
 - Ollama: <https://ollama.com/download>
 
-Only Python is needed to run the Phase 1 backend. Node.js and Ollama are listed for later phases; this phase does not install or download any AI model.
+Python is needed for the backend. Install Ollama to use Phase 4 semantic indexing and search. Node.js is listed for the later frontend phase. Installing the Python dependencies does not download an Ollama model.
 
 After installation, open a new PowerShell window and check the tools:
 
@@ -56,7 +59,8 @@ The requirements are limited to this phase:
 - `fastapi` builds the API and its route.
 - `uvicorn` runs the development server.
 - `pytest` runs automated tests.
-- `httpx` provides the HTTP client used by FastAPI's test client.
+- `httpx` provides the HTTP client used by the API and test client.
+- `chromadb` stores local embeddings and document metadata.
 
 If PowerShell blocks virtual environment activation, use Command Prompt without changing the machine's execution policy:
 
@@ -91,13 +95,33 @@ The tokens are local development credentials, not a production identity system. 
 
 Audit events are appended to `logs/audit.jsonl` by default. Set `RAGSHIELD_AUDIT_LOG` to choose another local path. The `logs/` directory is excluded from Git.
 
+To enable semantic search, install Ollama from <https://ollama.com/download>, then download the configured embedding model yourself:
+
+```powershell
+ollama pull nomic-embed-text
+```
+
+The application never downloads models automatically. With Ollama running and the role tokens configured, the HR role can index the fictional source documents:
+
+```powershell
+$hrHeaders = @{ Authorization = "Bearer $env:RAGSHIELD_HR_TOKEN" }
+Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8000/documents/index' -Headers $hrHeaders
+```
+
+Use either token to search the index. Employee results are filtered to employee metadata inside Chroma; HR can retrieve employee and HR results.
+
+```powershell
+$headers = @{ Authorization = "Bearer $env:RAGSHIELD_EMPLOYEE_TOKEN" }
+Invoke-RestMethod -Uri 'http://127.0.0.1:8000/documents/semantic-search?q=leave' -Headers $headers
+```
+
 ## Run the tests
 
 ```powershell
 python -m pytest
 ```
 
-The tests check the health response, token validation, employee-to-HR isolation, HR visibility across both allowed document categories, and that audit entries omit tokens and search text.
+The tests check the health response, token validation, keyword and vector-search role isolation, HR indexing permission, local embedding requests, chunking, and that audit entries omit tokens and search text.
 
 ## Troubleshooting
 
@@ -121,5 +145,5 @@ git push origin main
 
 ## How this connects to the future RAG pipeline
 
-This API now filters local source documents by a role selected from distinct bearer tokens and records minimal local audit events. Later phases can add chunking and local embeddings, send only authorized passages to Ollama, and build a frontend. The current keyword search is a small learning baseline, and these tests do not prove security against every attack.
+This API now filters local source documents by a role selected from distinct bearer tokens, records minimal local audit events, and can retrieve authorized passages using local embeddings. Later phases can send approved passages to a local generation model and build a frontend. The current tests do not prove security against every attack.
 
