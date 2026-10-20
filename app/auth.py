@@ -2,12 +2,12 @@
 
 import hmac
 import os
-from typing import Literal
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-Role = Literal["employee", "hr"]
+from app.audit import record_event
+from app.config import Role
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
@@ -26,6 +26,7 @@ def require_role(
         )
 
     if credentials is None or credentials.scheme.lower() != "bearer":
+        record_event("auth_denied", "unknown", "denied")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="A valid bearer token is required.",
@@ -37,6 +38,7 @@ def require_role(
     if hmac.compare_digest(credentials.credentials, hr_token):
         return "hr"
 
+    record_event("auth_denied", "unknown", "denied")
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="A valid bearer token is required.",

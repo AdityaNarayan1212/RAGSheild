@@ -4,7 +4,7 @@ RAGShield is a learning project for building and testing a locally run, access-c
 
 ## Current status
 
-Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR markdown files. The server filters document categories using the authenticated role before reading them. It does not yet connect to Ollama, store embeddings, or provide a frontend. A successful health check only confirms that the API responds; it does not prove application security.
+Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. The server filters document categories using the authenticated role before reading them. It does not yet connect to Ollama, store embeddings, or provide a frontend. A successful health check only confirms that the API responds; it does not prove application security.
 
 ## Planned architecture
 
@@ -14,6 +14,7 @@ Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles a
 - React, Vite, JavaScript, and CSS will provide the planned frontend.
 - pytest will verify backend behavior and later security controls.
 - Local bearer tokens select the demo employee or HR role for protected routes.
+- The audit log records event type, role, outcome, and result count without credentials or document content.
 
 No paid API, hosted inference service, or cloud database is required.
 
@@ -88,13 +89,15 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:8000/documents/search?q=leave' -Headers
 
 The tokens are local development credentials, not a production identity system. Keep any real values out of Git, and do not use the sample token values from tests outside testing.
 
+Audit events are appended to `logs/audit.jsonl` by default. Set `RAGSHIELD_AUDIT_LOG` to choose another local path. The `logs/` directory is excluded from Git.
+
 ## Run the tests
 
 ```powershell
 python -m pytest
 ```
 
-The tests check the health response, token validation, employee-to-HR isolation, and HR visibility across both allowed document categories.
+The tests check the health response, token validation, employee-to-HR isolation, HR visibility across both allowed document categories, and that audit entries omit tokens and search text.
 
 ## Troubleshooting
 
@@ -118,5 +121,5 @@ git push origin main
 
 ## How this connects to the future RAG pipeline
 
-This API now filters local source documents by a role selected from distinct bearer tokens. Later phases can add chunking and local embeddings, send only authorized passages to Ollama, and build a frontend and audit log. The current keyword search is a small learning baseline, and these tests do not prove security against every attack.
+This API now filters local source documents by a role selected from distinct bearer tokens and records minimal local audit events. Later phases can add chunking and local embeddings, send only authorized passages to Ollama, and build a frontend. The current keyword search is a small learning baseline, and these tests do not prove security against every attack.
 
