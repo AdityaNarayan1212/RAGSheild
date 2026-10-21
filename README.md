@@ -4,7 +4,7 @@ RAGShield is a learning project for building and testing a locally run, access-c
 
 ## Current status
 
-Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. Phase 4 adds local Ollama embeddings and a persistent Chroma vector index with role-filtered semantic retrieval. There is no answer-generating LLM route or frontend yet. A successful health check only confirms that the API responds; it does not prove application security.
+Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. Phase 4 adds local Ollama embeddings and a persistent Chroma vector index with role-filtered semantic retrieval. Phase 5 generates answers from authorized local passages and returns server-selected source references. A successful health check only confirms that the API responds; it does not prove application security.
 
 See [ROADMAP.md](ROADMAP.md) for delivered features and planned phases.
 
@@ -30,7 +30,7 @@ Install these tools from their official sources:
 - Node.js (includes npm): <https://nodejs.org/en/download>
 - Ollama: <https://ollama.com/download>
 
-Python is needed for the backend. Install Ollama to use Phase 4 semantic indexing and search. Node.js is listed for the later frontend phase. Installing the Python dependencies does not download an Ollama model.
+Python is needed for the backend. Install Ollama to use Phase 4 semantic indexing and Phase 5 local answer generation. Node.js is listed for the later frontend phase. Installing the Python dependencies does not download an Ollama model.
 
 After installation, open a new PowerShell window and check the tools:
 
@@ -115,13 +115,28 @@ $headers = @{ Authorization = "Bearer $env:RAGSHIELD_EMPLOYEE_TOKEN" }
 Invoke-RestMethod -Uri 'http://127.0.0.1:8000/documents/semantic-search?q=leave' -Headers $headers
 ```
 
+Ask a question using the same role token. The answer uses only the role-filtered retrieved passages, and the source list is constructed by the API from those passages.
+
+```powershell
+$body = @{ query = 'How do employees request leave?' } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:8000/documents/answer' -Headers $headers -ContentType 'application/json' -Body $body
+```
+
+Install the configured local generation model manually before using the answer endpoint:
+
+```powershell
+ollama pull qwen3:8b
+```
+
+The application never downloads models automatically. Prompt instructions reduce the chance that retrieved text is treated as commands, but they do not guarantee protection from prompt injection.
+
 ## Run the tests
 
 ```powershell
 python -m pytest
 ```
 
-The tests check the health response, token validation, keyword and vector-search role isolation, HR indexing permission, local embedding requests, chunking, and that audit entries omit tokens and search text.
+The tests check the health response, token validation, keyword and vector-search role isolation, HR indexing permission, local embedding and chat requests, chunking, answer-source handling, and that audit entries omit tokens and search text.
 
 ## Troubleshooting
 

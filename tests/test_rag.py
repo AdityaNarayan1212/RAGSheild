@@ -1,6 +1,6 @@
 import httpx
 
-from app.ollama import OllamaUnavailable, embed_texts
+from app.ollama import OllamaUnavailable, chat_completion, embed_texts
 from app.rag import chunk_text
 
 
@@ -29,6 +29,48 @@ def test_embedding_client_rejects_nonlocal_runtime(monkeypatch) -> None:
 
     try:
         embed_texts(["text"])
+    except OllamaUnavailable as error:
+        assert "local HTTP" in str(error)
+    else:
+        raise AssertionError("A non-local Ollama URL should be rejected.")
+
+
+def test_chat_client_sends_nonstreaming_request_to_local_ollama(monkeypatch) -> None:
+    monkeypatch.setenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+    captured = {}
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        captured["body"] = request.read()
+        return httpx.Response(
+            200,
+            json={"message": {"role": "assistant", "content": "  Supported answer.  "}},
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handle))
+    try:
+        result = chat_completion(
+            [
+                {"role": "system", "content": "Use the sources."},
+                {"role": "user", "content": "Question?"},
+            ],
+            client,
+        )
+    finally:
+        client.close()
+
+    assert captured["url"] == "http://127.0.0.1:11434/api/chat"
+    assert b'"model":"qwen3:8b"' in captured["body"]
+    assert b'"stream":false' in captured["body"]
+    assert b'"num_predict":512' in captured["body"]
+    assert result == "Supported answer."
+
+
+def test_chat_client_rejects_nonlocal_runtime(monkeypatch) -> None:
+    monkeypatch.setenv("OLLAMA_BASE_URL", "https://example.com")
+
+    try:
+        chat_completion([{"role": "user", "content": "Question?"}])
     except OllamaUnavailable as error:
         assert "local HTTP" in str(error)
     else:

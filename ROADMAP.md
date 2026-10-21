@@ -1,43 +1,46 @@
 # RAGShield Roadmap
 
-This page tracks the project in reviewable phases. Each completed phase has its own commit in the Git history and a short implementation note under `docs/`. No calendar dates are assigned yet; add a target date to a phase when it is scheduled.
+This page tracks the project in reviewable phases. Each completed phase has its own commit in the Git history and a short implementation note under `docs/`. Completion dates reflect the phase commit dates; future targets remain unscheduled until agreed.
 
 ## Completed
 
 ### Phase 1 — Project foundation
 
-**Status:** Complete  
+**Status:** Complete — 2026-10-21
+
 **Delivered:** FastAPI application, health endpoint, dependency setup, environment example, repository structure, and starter tests.
 
 ### Phase 2 — Role-aware document search
 
-**Status:** Complete  
+**Status:** Complete — 2026-10-21
+
 **Delivered:** Local employee and HR bearer-token roles, fictional Markdown documents, keyword search, and role-based source filtering.
 
 ### Phase 3 — Local audit logging
 
-**Status:** Complete  
+**Status:** Complete — 2026-10-21
+
 **Delivered:** JSON Lines audit events for searches and denied authentication attempts, without recording credentials, queries, or document contents.
 
 ### Phase 4 — Local semantic retrieval
 
-**Status:** Complete  
-**Delivered:** Ollama embeddings, persistent local Chroma storage, HR-only indexing, and role-filtered semantic search.
+**Status:** Complete — 2026-10-21
 
-## Next
+**Delivered:** Ollama embeddings, persistent local Chroma storage, HR-only indexing, and role-filtered semantic search.
 
 ### Phase 5 — Local answer generation
 
-**Status:** Planned  
-**Target date:** Not scheduled  
-**Planned work:** Generate answers from authorized retrieved passages using a manually installed local Ollama model, return source references, and add tests for role isolation and prompt-injection handling. The app will not download models automatically.
+**Status:** Complete — 2026-10-21
 
-## Later
+**Delivered:** Generate answers from authorized retrieved passages using a manually installed local Ollama model, return server-selected source references, and test role isolation and prompt-injection handling. The app does not download models automatically.
+
+## Next
 
 ### Phase 6 — User interface and security review
 
-**Status:** Planned  
-**Target date:** Not scheduled  
+**Status:** Planned
+**Target date:** Not scheduled
+
 **Planned work:** Build the local web interface and expand adversarial tests for document access, prompt injection, and audit behavior.
 
 ## Following progress

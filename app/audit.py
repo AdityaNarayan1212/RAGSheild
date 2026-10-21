@@ -14,7 +14,7 @@ _write_lock = threading.Lock()
 
 
 def record_event(
-    action: Literal["auth_denied", "document_index", "document_search"],
+    action: Literal["auth_denied", "document_answer", "document_index", "document_search"],
     role: Role | Literal["unknown"],
     outcome: Literal["denied", "empty", "success"],
     result_count: int = 0,

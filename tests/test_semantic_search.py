@@ -63,3 +63,34 @@ def test_hr_semantic_search_can_retrieve_both_categories(monkeypatch, tmp_path) 
     assert response.status_code == 200
     sources = {result["source"] for result in response.json()["results"]}
     assert sources == {"employee-handbook.md", "people-operations-policy.md"}
+
+
+def test_employee_answer_passes_only_employee_passages_to_generation(
+    monkeypatch, tmp_path
+) -> None:
+    client = indexed_client(monkeypatch, tmp_path)
+    captured = {}
+
+    def fake_generate(query, sources):
+        captured["sources"] = sources
+        return "Submit leave requests through the portal."
+
+    monkeypatch.setattr("app.main.generate_grounded_answer", fake_generate)
+
+    response = client.post(
+        "/documents/answer",
+        json={"query": "Where do I request leave?"},
+        headers={"Authorization": "Bearer employee-vector-test"},
+    )
+
+    assert response.status_code == 200
+    assert captured["sources"]
+    assert all(source["access_level"] == "employee" for source in captured["sources"])
+    assert all(source["source"] == "employee-handbook.md" for source in captured["sources"])
+    assert response.json()["sources"] == [
+        {
+            "title": "Employee Handbook",
+            "source": "employee-handbook.md",
+            "access_level": "employee",
+        }
+    ]
