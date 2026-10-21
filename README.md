@@ -1,20 +1,20 @@
 # RAGShield
 
-RAGShield is a learning project for building and testing a locally run, access-controlled Retrieval-Augmented Generation (RAG) application. The planned NovaTech assistant will answer employee questions from company documents while keeping HR-only material restricted. Later phases will explore retrieval authorization, prompt injection in documents, audit logging, and security testing.
+RAGShield is a learning project for building and testing a locally run, access-controlled Retrieval-Augmented Generation (RAG) application. The NovaTech assistant answers employee questions from fictional company documents while keeping HR-only material restricted. The project includes a local React interface, an adversarial test console, and backend security regression tests.
 
 ## Current status
 
-Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. Phase 4 adds local Ollama embeddings and a persistent Chroma vector index with role-filtered semantic retrieval. Phase 5 generates answers from authorized local passages and returns server-selected source references. A successful health check only confirms that the API responds; it does not prove application security.
+Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. Phase 4 adds local Ollama embeddings and a persistent Chroma vector index with role-filtered semantic retrieval. Phase 5 generates answers from authorized local passages and returns server-selected source references. Phase 6 adds a React/Vite interface, live read-only API probes, isolated synthetic security fixtures, and regression tests. A successful health check only confirms that the API responds; it does not prove application security.
 
-See [ROADMAP.md](ROADMAP.md) for delivered features and planned phases.
+See [ROADMAP.md](ROADMAP.md) for delivered features and [docs/phase-6.md](docs/phase-6.md) for the current phase setup and security boundaries.
 
 ## Planned architecture
 
 - Python and FastAPI provide the backend API.
 - Ollama will run the language model locally (`qwen3:8b`) and the embedding model (`nomic-embed-text`).
 - ChromaDB will store local document embeddings.
-- React, Vite, JavaScript, and CSS will provide the planned frontend.
-- pytest will verify backend behavior and later security controls.
+- React, Vite, JavaScript, and CSS provide the local frontend.
+- pytest and Vitest verify backend behavior, frontend response handling, and selected security controls.
 - Local bearer tokens select the demo employee or HR role for protected routes.
 - The audit log records event type, role, outcome, and result count without credentials or document content.
 - Ollama creates embeddings locally; Chroma persists vectors under `data/chroma`.
@@ -27,10 +27,10 @@ Install these tools from their official sources:
 
 - Python 3.10 or newer: <https://www.python.org/downloads/>
 - Git: <https://git-scm.com/downloads>
-- Node.js (includes npm): <https://nodejs.org/en/download>
+- Node.js 22.12+ or 20.19+ (includes npm): <https://nodejs.org/en/download>
 - Ollama: <https://ollama.com/download>
 
-Python is needed for the backend. Install Ollama to use Phase 4 semantic indexing and Phase 5 local answer generation. Node.js is listed for the later frontend phase. Installing the Python dependencies does not download an Ollama model.
+Python is needed for the backend, and Node.js/npm run the frontend. Install Ollama to use Phase 4 semantic indexing and Phase 5 local answer generation. Installing either dependency set does not download an Ollama model.
 
 After installation, open a new PowerShell window and check the tools:
 
@@ -77,9 +77,11 @@ You can also avoid activation by calling `.venv\Scripts\python.exe` directly.
 With the virtual environment active, configure two different local demo tokens and start the server in the same PowerShell window:
 
 ```powershell
-$env:RAGSHIELD_EMPLOYEE_TOKEN = [guid]::NewGuid().ToString('N')
-$env:RAGSHIELD_HR_TOKEN = [guid]::NewGuid().ToString('N')
-python -m uvicorn app.main:app --reload
+$employeeToken = Read-Host 'Choose a local employee token and remember it for sign-in'
+$hrToken = Read-Host 'Choose a different local HR token and remember it for sign-in'
+$env:RAGSHIELD_EMPLOYEE_TOKEN = $employeeToken
+$env:RAGSHIELD_HR_TOKEN = $hrToken
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --no-access-log
 ```
 
 Open <http://127.0.0.1:8000/health> to see `{"status":"ok"}`. Stop the server with **Ctrl+C** in its terminal.
@@ -93,7 +95,7 @@ Invoke-RestMethod -Uri 'http://127.0.0.1:8000/documents/search?q=leave' -Headers
 
 The tokens are local development credentials, not a production identity system. Keep any real values out of Git, and do not use the sample token values from tests outside testing.
 
-Audit events are appended to `logs/audit.jsonl` by default. Set `RAGSHIELD_AUDIT_LOG` to choose another local path. The `logs/` directory is excluded from Git.
+Audit events are appended to `logs/audit.jsonl` by default. Set `RAGSHIELD_AUDIT_LOG` to choose another local path. The `logs/` directory is excluded from Git. The recommended Uvicorn command disables access logging because its default request line includes keyword-search query strings.
 
 To enable semantic search, install Ollama from <https://ollama.com/download>, then download the configured embedding model yourself:
 
@@ -130,13 +132,42 @@ ollama pull qwen3:8b
 
 The application never downloads models automatically. Prompt instructions reduce the chance that retrieved text is treated as commands, but they do not guarantee protection from prompt injection.
 
+## Run the frontend
+
+Keep the backend running in one PowerShell window. Open a second window from the repository folder:
+
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open <http://127.0.0.1:5173>. The Vite server proxies `/api` requests to `http://127.0.0.1:8000`; both servers bind to loopback. Sign in with one of the tokens configured in the backend window. The token stays in page memory and is cleared when you sign out or refresh.
+
+Run the frontend checks from `frontend/`:
+
+```powershell
+npm test
+npm run build
+```
+
+The Security Lab sends actual read-only HTTP requests and records response status and assertions. Answer-generation probes need the local Ollama embedding and chat models; an HTTP 503 is shown as blocked. The test fixture under `data/source/security-tests/` is not included in normal indexing or search. Run `python scripts/validate_dataset.py` from the repository root to check that boundary.
+
 ## Run the tests
 
 ```powershell
 python -m pytest
+python scripts/validate_dataset.py
 ```
 
-The tests check the health response, token validation, keyword and vector-search role isolation, HR indexing permission, local embedding and chat requests, chunking, answer-source handling, and that audit entries omit tokens and search text.
+If the virtual environment activation script is unavailable, call its interpreter directly:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+.\.venv\Scripts\python.exe scripts\validate_dataset.py
+```
+
+The tests check the health response, token validation, keyword and vector-search role isolation, HR indexing permission, local embedding and chat requests, chunking, answer-source handling, ignored role overrides, security-fixture isolation, and that audit entries omit tokens and search text.
 
 ## Troubleshooting
 
@@ -148,17 +179,16 @@ The tests check the health response, token validation, keyword and vector-search
 
 ## Git safety
 
-The `.gitignore` excludes virtual environments, secrets, local ChromaDB data, logs, generated sensitive security-test data, and frontend build artifacts. It keeps `.env.example` available as documentation.
+The `.gitignore` excludes virtual environments, secrets, local ChromaDB data, logs, generated sensitive security-test data, and frontend build artifacts. It keeps `.env.example` and the synthetic fixture file available as documentation and test data.
 
-Git is initialized on the `main` branch in this workspace. For future changes, stage, commit, and push them with:
+Keep phase work on a named branch. Phase 6 is prepared on `phase-6-ui-security-review`; publish that branch only after reviewing the commit:
 
 ```powershell
-git add .
-git commit -m "Describe your change"
-git push origin main
+git status --short --branch
+git push -u origin phase-6-ui-security-review
 ```
 
 ## How this connects to the future RAG pipeline
 
-This API now filters local source documents by a role selected from distinct bearer tokens, records minimal local audit events, and can retrieve authorized passages using local embeddings. Later phases can send approved passages to a local generation model and build a frontend. The current tests do not prove security against every attack.
+The backend filters local source documents by roles resolved from distinct bearer tokens, records minimal local audit events, retrieves authorized passages using local embeddings, and generates answers using a local model. The frontend displays returned text and citations without interpreting model HTML. Automated and live checks cover specific invariants but do not prove security against every attack.
 

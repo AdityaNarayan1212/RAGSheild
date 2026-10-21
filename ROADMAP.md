@@ -34,14 +34,13 @@ This page tracks the project in reviewable phases. Each completed phase has its 
 
 **Delivered:** Generate answers from authorized retrieved passages using a manually installed local Ollama model, return server-selected source references, and test role isolation and prompt-injection handling. The app does not download models automatically.
 
-## Next
-
 ### Phase 6 — User interface and security review
 
-**Status:** Planned
-**Target date:** Not scheduled
+**Status:** Complete — 2026-10-21
 
-**Planned work:** Build the local web interface and expand adversarial tests for document access, prompt injection, and audit behavior.
+**Delivered:** Local React/Vite login, document chat, citations, security lab, and truthful runtime status; memory-only token handling; isolated synthetic fixtures and dataset validation; backend and frontend regression tests. Pytest, Vitest, dataset validation, and the frontend production build pass.
+
+See [docs/phase-6.md](docs/phase-6.md) for implementation details, run commands, and limitations.
 
 ## Following progress
 

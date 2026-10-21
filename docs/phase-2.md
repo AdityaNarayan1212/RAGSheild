@@ -15,12 +15,14 @@ Phase 2 adds a small local search path that demonstrates one key RAG security ru
 Set distinct token values in the PowerShell window used to start the server:
 
 ```powershell
-$env:RAGSHIELD_EMPLOYEE_TOKEN = [guid]::NewGuid().ToString('N')
-$env:RAGSHIELD_HR_TOKEN = [guid]::NewGuid().ToString('N')
-python -m uvicorn app.main:app --reload
+$employeeToken = Read-Host 'Choose a local employee token and remember it for sign-in'
+$hrToken = Read-Host 'Choose a different local HR token and remember it for sign-in'
+$env:RAGSHIELD_EMPLOYEE_TOKEN = $employeeToken
+$env:RAGSHIELD_HR_TOKEN = $hrToken
+python -m uvicorn app.main:app --reload --host 127.0.0.1 --no-access-log
 ```
 
-The endpoint returns `503` if either token is missing or both tokens are equal. It returns `401` for missing or invalid bearer credentials.
+The endpoint returns `503` if either token is missing or both tokens are equal. It returns `401` for missing or invalid bearer credentials. Access logging is disabled because the default Uvicorn request line includes the search query string.
 
 ## Design limits
 

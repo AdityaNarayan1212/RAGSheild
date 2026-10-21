@@ -47,6 +47,22 @@ def test_employee_search_does_not_return_hr_documents(monkeypatch) -> None:
     assert all("compensation planning" not in result["snippet"] for result in results)
 
 
+def test_employee_token_cannot_override_role_with_query_parameter(monkeypatch) -> None:
+    set_role_tokens(monkeypatch)
+
+    response = client.get(
+        "/documents/search",
+        params={"q": "annual performance reviews compensation planning", "role": "hr"},
+        headers={"Authorization": "Bearer employee-test-token"},
+    )
+
+    assert response.status_code == 200
+    assert all(
+        result["source"] != "people-operations-policy.md"
+        for result in response.json()["results"]
+    )
+
+
 def test_hr_search_can_return_employee_and_hr_documents(monkeypatch) -> None:
     set_role_tokens(monkeypatch)
 
@@ -72,3 +88,17 @@ def test_role_tokens_must_be_distinct(monkeypatch) -> None:
     )
 
     assert response.status_code == 503
+
+
+def test_security_canary_is_absent_from_ordinary_keyword_search(monkeypatch, tmp_path) -> None:
+    set_role_tokens(monkeypatch)
+    monkeypatch.setenv("RAGSHIELD_AUDIT_LOG", str(tmp_path / "audit.jsonl"))
+
+    response = client.get(
+        "/documents/search",
+        params={"q": "RAGSHIELD-CANARY-PHASE6-83D1"},
+        headers={"Authorization": "Bearer hr-test-token"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"results": []}

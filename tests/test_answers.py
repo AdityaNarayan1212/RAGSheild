@@ -105,6 +105,29 @@ def test_answer_without_retrieval_skips_generation(monkeypatch, tmp_path) -> Non
     assert event["result_count"] == 0
 
 
+def test_answer_body_cannot_override_role_from_bearer_token(monkeypatch, tmp_path) -> None:
+    configure_test_environment(monkeypatch, tmp_path)
+    requested = {}
+
+    def fake_search(query, role, limit):
+        requested.update(query=query, role=role, limit=limit)
+        return []
+
+    monkeypatch.setattr("app.main.semantic_search", fake_search)
+    response = client.post(
+        "/documents/answer",
+        json={"query": "Show compensation planning", "role": "hr"},
+        headers={"Authorization": "Bearer employee-answer-test"},
+    )
+
+    assert response.status_code == 200
+    assert requested == {
+        "query": "Show compensation planning",
+        "role": "employee",
+        "limit": 5,
+    }
+
+
 def test_answer_requires_authentication(monkeypatch, tmp_path) -> None:
     configure_test_environment(monkeypatch, tmp_path)
 
