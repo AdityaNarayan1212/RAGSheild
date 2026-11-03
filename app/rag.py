@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TypedDict
 
-from app.config import Role
+from app.config import Role, get_max_cosine_distance
 from app.documents import DOCUMENT_ROOT
 from app.ollama import embed_texts
 from app.vector_store import collection_for_configured_path
@@ -133,7 +133,8 @@ def rebuild_index() -> dict[str, int]:
 
 
 def semantic_search(query: str, role: Role, limit: int) -> list[SemanticResult]:
-    """Filter by authorized source category inside Chroma before returning matches."""
+    """Filter by role and optional cosine distance before returning matches."""
+    max_distance = get_max_cosine_distance()
     query_embedding = embed_texts([query])[0]
     allowed_levels = ["employee"] if role == "employee" else ["employee", "hr"]
     result = collection_for_configured_path().query(
@@ -149,7 +150,9 @@ def semantic_search(query: str, role: Role, limit: int) -> list[SemanticResult]:
     matches: list[SemanticResult] = []
     for document, metadata, distance in zip(documents, metadatas, distances):
         level = metadata.get("access_level")
-        if level not in allowed_levels:
+        if level not in allowed_levels or (
+            max_distance is not None and float(distance) > max_distance
+        ):
             continue
         matches.append(
             {

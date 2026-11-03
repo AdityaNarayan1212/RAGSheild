@@ -124,7 +124,7 @@ The browser security page can run authentication and keyword-access probes witho
 - Local demo bearer tokens are not a production identity system. They are configured by the backend operator and should not be reused as real credentials.
 - The display preference is not a verified role label. A mismatch between preference and token permissions should make a role-specific probe fail.
 - The backend's health endpoint says only that the API process responds. It does not test Ollama, model readiness, or index presence.
-- The answer endpoint has no configurable retrieval relevance threshold. A query with no semantic matches cannot be reliably demonstrated through live answer behavior until such a contract exists; the no-retrieval branch is verified with mocked retrieval in pytest.
+- At the Phase 6 milestone, the answer endpoint had no configurable retrieval relevance threshold. Phase 7 adds the optional `RAGSHIELD_MAX_COSINE_DISTANCE` cutoff; demonstrating an empty live answer path still depends on calibrating that cutoff against the local embedding model and corpus.
 - The isolated indirect-injection fixture is not injected into the production index. An end-to-end fixture test would need a separate isolated test collection and explicit lifecycle controls.
 - The UI does not display audit records. The JSONL file remains local, append-only by convention, and not tamper-proof.
 - Prompt instructions and source-scope tests are defense-in-depth, not proof of model safety.

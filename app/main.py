@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from app.audit import record_event
 from app.auth import Role, require_hr, require_role
-from app.config import APP_TITLE, HEALTH_STATUS
+from app.config import APP_TITLE, HEALTH_STATUS, RetrievalConfigurationError
 from app.documents import SearchResult, search_documents
 from app.generation import generate_grounded_answer
 from app.ollama import OllamaUnavailable
@@ -67,6 +67,8 @@ def search_semantic_documents(
         results = semantic_search(query.strip(), role, limit)
     except OllamaUnavailable as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
+    except RetrievalConfigurationError as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
     record_event(
         "document_search",
         role,
@@ -95,6 +97,8 @@ def answer_document_question(
         )
     except OllamaUnavailable as error:
         raise HTTPException(status_code=503, detail=str(error)) from error
+    except RetrievalConfigurationError as error:
+        raise HTTPException(status_code=500, detail=str(error)) from error
 
     sources: list[dict[str, str]] = []
     seen_sources: set[tuple[str, str]] = set()

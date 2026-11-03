@@ -42,6 +42,16 @@ This page tracks the project in reviewable phases. Each completed phase has its 
 
 See [docs/phase-6.md](docs/phase-6.md) for implementation details, run commands, and limitations.
 
+## In review
+
+### Phase 7 — Retrieval relevance controls and project guide
+
+**Status:** Implementation ready for review — 2026-11-03; verification pending
+
+**Delivered:** Optional `RAGSHIELD_MAX_COSINE_DISTANCE` filtering is applied consistently to semantic search and answer context. The default is unset to preserve behavior until an operator calibrates a cutoff. Added a project-wide guide covering architecture, phases, operation, and remaining work.
+
+See [docs/phase-7.md](docs/phase-7.md) for configuration and review notes, and [docs/project-summary.md](docs/project-summary.md) for the complete project overview.
+
 ## Following progress
 
 - Each phase is kept in its own commit so the GitHub commit history shows what changed at each step.

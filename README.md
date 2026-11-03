@@ -4,9 +4,9 @@ RAGShield is a learning project for building and testing a locally run, access-c
 
 ## Current status
 
-Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. Phase 4 adds local Ollama embeddings and a persistent Chroma vector index with role-filtered semantic retrieval. Phase 5 generates answers from authorized local passages and returns server-selected source references. Phase 6 adds a React/Vite interface, live read-only API probes, isolated synthetic security fixtures, and regression tests. A successful health check only confirms that the API responds; it does not prove application security.
+Phase 1 provides the FastAPI foundation. Phase 2 adds local bearer-token roles and keyword search over fictional employee and HR Markdown files. Phase 3 writes local JSON Lines audit events for searches and denied authentication attempts. Phase 4 adds local Ollama embeddings and a persistent Chroma vector index with role-filtered semantic retrieval. Phase 5 generates answers from authorized local passages and returns server-selected source references. Phase 6 adds a React/Vite interface, live read-only API probes, isolated synthetic security fixtures, and regression tests. Phase 7 adds an optional retrieval relevance cutoff and a project-wide guide. A successful health check only confirms that the API responds; it does not prove application security.
 
-See [ROADMAP.md](ROADMAP.md) for delivered features and [docs/phase-6.md](docs/phase-6.md) for the current phase setup and security boundaries.
+See [ROADMAP.md](ROADMAP.md) for delivered features, [docs/project-summary.md](docs/project-summary.md) for the complete project guide, and the phase notes under `docs/` for setup and boundaries.
 
 ## Planned architecture
 
@@ -116,6 +116,8 @@ Use either token to search the index. Employee results are filtered to employee 
 $headers = @{ Authorization = "Bearer $env:RAGSHIELD_EMPLOYEE_TOKEN" }
 Invoke-RestMethod -Uri 'http://127.0.0.1:8000/documents/semantic-search?q=leave' -Headers $headers
 ```
+
+You can optionally set `RAGSHIELD_MAX_COSINE_DISTANCE` in the backend process environment to filter weak matches before they are returned or sent to the answer model. Chroma's configured cosine distance ranges from 0 to 2; lower values are stricter. Leave it unset until you calibrate it against representative questions with your configured embedding model. See [docs/phase-7.md](docs/phase-7.md).
 
 Ask a question using the same role token. The answer uses only the role-filtered retrieved passages, and the source list is constructed by the API from those passages.
 
